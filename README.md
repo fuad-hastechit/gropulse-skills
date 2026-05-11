@@ -10,8 +10,14 @@ Internal Claude Code plugin — reusable implementation skills for Gropulse Shop
 
 ## Install
 
+1. Add the marketplace source:
 ```
-/add-plugin gropulse-skills@gropulse
+/plugin marketplace add fuad-hastechit/gropulse-skills
+```
+
+2. Install the plugin:
+```
+/plugin install gropulse-skills@gropulse
 ```
 
 ## Adding more skills
