@@ -1,0 +1,12 @@
+{
+  "name": "gropulse-skills",
+  "description": "Internal skills for Gropulse Shopify apps — reusable implementation guides for common features like appointment booking.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Khalid Saifullah Fuad"
+  },
+  "homepage": "https://github.com/fuad-hastechit/gropulse-skills",
+  "repository": "https://github.com/fuad-hastechit/gropulse-skills",
+  "license": "MIT",
+  "commands": "./.claude/commands"
+}

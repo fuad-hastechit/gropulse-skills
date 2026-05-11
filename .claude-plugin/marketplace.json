@@ -1,0 +1,19 @@
+{
+  "name": "gropulse",
+  "owner": {
+    "name": "Khalid Saifullah Fuad"
+  },
+  "metadata": {
+    "description": "Internal skills for Gropulse Shopify apps."
+  },
+  "plugins": [
+    {
+      "name": "gropulse-skills",
+      "source": {
+        "source": "github",
+        "repo": "fuad-hastechit/gropulse-skills"
+      },
+      "description": "Reusable implementation skills for Gropulse Shopify apps — appointment booking, and more."
+    }
+  ]
+}
