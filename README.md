@@ -6,6 +6,7 @@ Internal Claude Code plugin — reusable implementation skills for Gropulse Shop
 
 | Skill | Slash command | What it does |
 |-------|--------------|-------------|
+| `translation` | `/translation` | Add full multilanguage support (i18next, DB-persisted language, auto-detection, language switcher) |
 | `appointment-booking` | `/appointment-booking` | Add free Growth Strategy Call booking to any Gropulse app |
 
 ## Install

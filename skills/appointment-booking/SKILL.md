@@ -32,8 +32,8 @@ There are **two separate buttons** with the same label but completely different 
 - **Location:** Fixed position, bottom-left corner of every app page (`position: "fixed", bottom: "24px", left: "24px"`)
 - **Defined in:** `app/routes/app.tsx` inside `AppShell`, after `<Outlet />`
 - **Visible on:** Every page **except** `/app/growth-call` (hidden via `isGrowthCallPage` check)
-- **Action:** Navigates to `/app/growth-call` via React Router `<Link to="/app/growth-call">` — NOT `useNavigate`, NOT `<button onClick>`
-- **Renders as:** `<Link>` from `react-router` with inline styles (renders as `<a>` tag). Not `<s-button>`, not `<button>` — required because fixed-position overlays inside the Shopify Admin iframe don't render Polaris Web Components reliably
+- **Action:** Navigates to `/app/growth-call` via `useNavigate` from `react-router` — `onClick={() => navigate("/app/growth-call")}`. NOT `<Link>`.
+- **Renders as:** Raw HTML `<button>` with inline styles. Not `<Link>`, not `<s-button>` — Polaris Web Components don't render reliably in fixed-position overlays inside the Shopify Admin iframe
 - **Layout:** `display: "flex"`, `alignItems: "center"`, `gap: "10px"` (icon left, text right)
 - **Design:**
   - Background: `#0d1f3c` (dark navy)
@@ -42,12 +42,13 @@ There are **two separate buttons** with the same label but completely different 
   - Font weight: `500` (medium — inherits system/browser font stack, no explicit `fontFamily`)
   - Letter spacing: `0.01em`
   - White-space: `nowrap`
-  - Text decoration: `none` (suppress default `<a>` underline)
   - Padding: `16px 18px`
+  - Border: `none`
   - Border radius: `14px`
+  - Cursor: `pointer`
   - Box shadow: `0 2px 12px rgba(0,0,0,0.35)`
   - Transition: `opacity 0.15s ease, transform 0.1s ease`
-  - Hover: opacity → `0.88` + `translateY(-1px)` lift; mouse-leave restores opacity `1` + `translateY(0)` (cast `e.currentTarget` as `HTMLAnchorElement`)
+  - Hover: opacity → `0.88` + `translateY(-1px)` lift; mouse-leave restores opacity `1` + `translateY(0)` (cast `e.currentTarget` as `HTMLButtonElement`)
   - z-index: `9998` (below Shopify Admin modals at 9999+)
 - **Icon:** Calendar SVG, `width="16" height="16" viewBox="0 0 20 20"`, `fill="none"`, `aria-hidden="true"`, `style={{ flexShrink: 0 }}`. Exact paths:
   ```svg
@@ -181,13 +182,12 @@ In `app/routes/app.tsx`, update the `AppShell` component to:
 **Import line change:**
 ```diff
 -import { Outlet, useLoaderData, useRouteError } from "react-router";
-+import { Link, Outlet, useLoaderData, useLocation, useRouteError } from "react-router";
++import { Outlet, useLoaderData, useLocation, useNavigate, useRouteError } from "react-router";
 ```
-
-No `useNavigate` — navigation is handled by `<Link>` directly.
 
 **Inside `AppShell` function body, before the return:**
 ```tsx
+const navigate = useNavigate();
 const location = useLocation();
 const isGrowthCallPage = location.pathname === "/app/growth-call";
 ```
@@ -196,8 +196,8 @@ const isGrowthCallPage = location.pathname === "/app/growth-call";
 ```tsx
 {!isGrowthCallPage && (
   <div style={{ position: "fixed", bottom: "24px", left: "24px", zIndex: 9998 }}>
-    <Link
-      to="/app/growth-call"
+    <button
+      onClick={() => navigate("/app/growth-call")}
       style={{
         display: "flex",
         alignItems: "center",
@@ -207,20 +207,21 @@ const isGrowthCallPage = location.pathname === "/app/growth-call";
         fontWeight: 500,
         color: "#ffffff",
         background: "#0d1f3c",
+        border: "none",
         borderRadius: "14px",
+        cursor: "pointer",
         boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
         letterSpacing: "0.01em",
         whiteSpace: "nowrap",
-        textDecoration: "none",
         transition: "opacity 0.15s ease, transform 0.1s ease",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.opacity = "0.88";
-        (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)";
+        (e.currentTarget as HTMLButtonElement).style.opacity = "0.88";
+        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.opacity = "1";
-        (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
+        (e.currentTarget as HTMLButtonElement).style.opacity = "1";
+        (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
       }}
     >
       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -232,16 +233,16 @@ const isGrowthCallPage = location.pathname === "/app/growth-call";
         <circle cx="13" cy="12" r="1" fill="white"/>
       </svg>
       Book Free Strategy Call
-    </Link>
+    </button>
   </div>
 )}
 ```
 
 **Design decisions:**
-- Uses `<Link>` from `react-router` (renders as `<a>`) + inline styles. Not `<button>`, not `<s-button>`. `<Link>` is correct for navigating to a page; `<button>` is for actions. `textDecoration: "none"` suppresses the default anchor underline.
+- Raw `<button>` + `useNavigate` for programmatic navigation. Not `<Link>`, not `<s-button>` — Polaris Web Components don't render reliably in fixed-position overlays inside the Shopify Admin iframe.
 - `zIndex: 9998` keeps it below Shopify Admin modals (z-index 9999+).
 - Hidden on `/app/growth-call` to avoid visual redundancy with Button 2.
-- **Do NOT add `/app/growth-call` to `<s-app-nav>`** — hidden page, access only via this floating link.
+- **Do NOT add `/app/growth-call` to `<s-app-nav>`** — hidden page, access only via this floating button.
 
 **Verify:**
 ```bash
@@ -458,6 +459,154 @@ When adding this to a new app:
 
 ---
 
+## Step 7 — Translation (if project uses the translation skill)
+
+**This step is always last. Before doing anything, ask the user:**
+
+```
+I can see this project has i18next set up (app/locales/ exists).
+Should I translate the appointment booking UI?
+This will move all hardcoded strings in the floating button and the growth-call page into your locale files.
+
+Reply YES to proceed, NO to skip.
+```
+
+**Only continue if the user explicitly says yes.**
+
+---
+
+### What to translate
+
+There are three locations with hardcoded strings to move into locale files:
+
+**Button 1 — floating CTA label (in `app/routes/app.tsx`):**
+- `"Book Free Strategy Call"` (link text)
+
+**Growth-call page (`app/routes/app.growth-call.tsx`):**
+- Page heading: `"Growth Strategy Call"`
+- Subheading: `"Book a free 30-minute Growth Strategy call"`
+- Subtitle: `"A working session with a Gropulse Shopify specialist - no sales pitch, no commitment."`
+- All 5 BENEFITS strings
+- Button 2 label: `"Book Free Strategy Call"`
+
+---
+
+### Step 7a — Add translation keys to `en.json`
+
+Add a `growthCall` namespace to `app/locales/en.json`:
+
+```json
+{
+  "growthCall": {
+    "pageHeading": "Growth Strategy Call",
+    "subheading": "Book a free 30-minute Growth Strategy call",
+    "subtitle": "A working session with a Gropulse Shopify specialist - no sales pitch, no commitment.",
+    "benefit1": "Get specific, actionable tactics tailored to your store - we already have your context.",
+    "benefit2": "Find the biggest growth lever you're missing - conversion, AOV, retention, or paid acquisition.",
+    "benefit3": "Walk away with a 3-step plan you can ship the same week.",
+    "benefit4": "Talk to someone who's grown 100+ Shopify stores - not a generic consultant.",
+    "benefit5": "Completely free - yours because you're already a Gropulse customer.",
+    "ctaButton": "Book Free Strategy Call"
+  }
+}
+```
+
+Mirror these keys into every other language file under `app/locales/` — translate each string into the target language.
+
+---
+
+### Step 7b — Update `app/routes/app.tsx` (Button 1)
+
+Button 1 is in `AppShell` — add `useTranslation` and replace the hardcoded label:
+
+```diff
++import { useTranslation } from "react-i18next";
+
+ function AppShell() {
++  const { t } = useTranslation();
+   const location = useLocation();
+   const isGrowthCallPage = location.pathname === "/app/growth-call";
+   // ...
+
+-      Book Free Strategy Call
++      {t("growthCall.ctaButton")}
+```
+
+---
+
+### Step 7c — Update `app/routes/app.growth-call.tsx` (page + Button 2)
+
+Replace all hardcoded strings with `t()` calls. The `BENEFITS` array becomes translation keys:
+
+```diff
++import { useTranslation } from "react-i18next";
+
++const BENEFIT_KEYS = [
++  "growthCall.benefit1",
++  "growthCall.benefit2",
++  "growthCall.benefit3",
++  "growthCall.benefit4",
++  "growthCall.benefit5",
++] as const;
+
+-const BENEFITS = [
+-  "Get specific, actionable tactics tailored to your store - we already have your context.",
+-  "Find the biggest growth lever you're missing - conversion, AOV, retention, or paid acquisition.",
+-  "Walk away with a 3-step plan you can ship the same week.",
+-  "Talk to someone who's grown 100+ Shopify stores - not a generic consultant.",
+-  "Completely free - yours because you're already a Gropulse customer.",
+-];
+
+ export default function GrowthCallPage() {
++  const { t } = useTranslation();
+   const data = useRouteLoaderData<typeof loader>("routes/app")!;
+
+   return (
+-    <s-page heading="Growth Strategy Call">
++    <s-page heading={t("growthCall.pageHeading")}>
+       <s-section>
+         <s-stack gap="large">
+           <s-stack gap="small-100">
+-            <div style={{ fontSize: "16px", fontWeight: "bold" }}>Book a free 30-minute Growth Strategy call</div>
++            <div style={{ fontSize: "16px", fontWeight: "bold" }}>{t("growthCall.subheading")}</div>
+             <s-paragraph color="subdued">
+-              A working session with a Gropulse Shopify specialist - no sales pitch, no commitment.
++              {t("growthCall.subtitle")}
+             </s-paragraph>
+           </s-stack>
+
+           <s-stack gap="small-200">
+-            {BENEFITS.map((benefit, i) => (
+-              <s-grid key={i} gridTemplateColumns="auto 1fr" gap="small-200" alignItems="start">
++            {BENEFIT_KEYS.map((key) => (
++              <s-grid key={key} gridTemplateColumns="auto 1fr" gap="small-200" alignItems="start">
+                 <s-icon type="check-circle" tone="success" />
+-                <s-paragraph>{benefit}</s-paragraph>
++                <s-paragraph>{t(key)}</s-paragraph>
+               </s-grid>
+             ))}
+           </s-stack>
+
+           <BookingWidget
+             // ...
+-            buttonLabel="Book Free Strategy Call"
++            buttonLabel={t("growthCall.ctaButton")}
+           />
+```
+
+---
+
+### Step 7d — Verify
+
+```bash
+npm run typecheck 2>&1 | grep -E "error" | head -20
+npm run build 2>&1 | tail -20
+```
+
+Manual check: switch app language → floating button label and all growth-call page text update immediately with no page reload.
+
+---
+
 ## Files changed summary
 
 | File | Change |
@@ -466,3 +615,7 @@ When adding this to a new app:
 | `app/routes/app.tsx` | Add 6 loader fields; add `useLocation`/`useNavigate`; add floating CTA button (Button 1) |
 | `app/routes/app.growth-call.tsx` | New file — growth strategy call landing page with BookingWidget (Button 2) |
 | `.env.example` | Add `BOOKING_API_URL=` (optional) |
+| `app/locales/en.json` *(if translation skill present)* | Add `growthCall` namespace keys |
+| `app/locales/*.json` *(if translation skill present)* | Mirror and translate `growthCall` keys in all language files |
+| `app/routes/app.tsx` *(if translation skill present)* | Replace hardcoded Button 1 label with `t("growthCall.ctaButton")` |
+| `app/routes/app.growth-call.tsx` *(if translation skill present)* | Replace all hardcoded strings with `t()` calls |
