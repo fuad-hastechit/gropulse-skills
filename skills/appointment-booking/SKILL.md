@@ -152,6 +152,7 @@ The `app/routes/app.tsx` root loader must expose these fields so child routes ca
     apiKey: process.env.SHOPIFY_API_KEY || "",
     shopDomain: session.shop,
     appLanguage: settings?.appLanguage ?? "en",
++   appName: process.env.SHOPIFY_APP_NAME || "GroPulse App",
 +   ownerName: shop?.shopOwner ?? "",
 +   email: shop?.email ?? "",
 +   plan: shop?.planName ?? "free",
@@ -321,7 +322,7 @@ export default function GrowthCallPage() {
           <BookingWidget
             apiBaseUrl={data.bookingApiUrl}
             context={{
-              appName: "GroPulse Redirect Manager",
+              appName: data.appName,
               shopDomain: data.shopDomain,
               ownerName: data.ownerName,
               email: data.email,
@@ -339,8 +340,6 @@ export default function GrowthCallPage() {
 }
 ```
 
-**Change `appName` to match the specific app** — it's injected into the AI system prompt only, not shown on the page.
-
 **Verify:**
 ```bash
 npm run typecheck 2>&1 | grep -E "error" | head -20
@@ -353,9 +352,12 @@ npm run build 2>&1 | tail -20
 
 The booking URL is hardcoded to `https://booking.gropulse.com` by default. No env var is required for production.
 
-Add `BOOKING_API_URL` to `.env.example` only to document the local dev override:
+Add both vars to `.env.example` to document them:
 
 ```bash
+SHOPIFY_APP_NAME=
+# Set to the app's display name — injected into the booking AI system prompt
+
 BOOKING_API_URL=
 # Leave blank for production — hardcoded default is https://booking.gropulse.com
 # Set to http://localhost:8787 only when running the booking API locally
@@ -400,7 +402,7 @@ interface BookingWidgetProps {
 
 ```ts
 interface ShopContext {
-  appName: string;          // REQUIRED — injected into AI system prompt (change per app)
+  appName: string;          // REQUIRED — injected into AI system prompt (set via SHOPIFY_APP_NAME env var)
   shopDomain: string;       // REQUIRED — e.g. "mystore.myshopify.com"
   ownerName: string;        // REQUIRED — merchant name for personalization
   email: string;            // REQUIRED — pre-fills booking attendee email
@@ -436,7 +438,7 @@ extraContext: { monthlyRevenue: number, returningCustomerRate: number, topChanne
 
 When adding this to a new app:
 
-1. **Change `appName`** in the `context` object — injected into AI system prompt only
+1. **Set `SHOPIFY_APP_NAME`** env var — injected into AI system prompt via `data.appName`, no code change needed
 2. **Add relevant `extraContext`** fields from the table above
 3. **Keep `bookingApiUrl`** pointing to `https://booking.gropulse.com` — same API for all apps
 4. **Verify the parent loader** exposes `shopOwner`, `email`, `planName`, `installedAt`, `ianaTimezone`
