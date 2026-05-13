@@ -11,6 +11,21 @@ Internal Claude Code plugin — reusable implementation skills for Gropulse Shop
 
 ## Install
 
+### Via skills.sh (recommended)
+
+```bash
+npx skills add https://github.com/fuad-hastechit/gropulse-skills
+```
+
+Install a specific skill only:
+
+```bash
+npx skills add https://github.com/fuad-hastechit/gropulse-skills --skill appointment-booking
+npx skills add https://github.com/fuad-hastechit/gropulse-skills --skill translation
+```
+
+### Via Claude Code plugin marketplace
+
 1. Add the marketplace source:
 ```
 /plugin marketplace add fuad-hastechit/gropulse-skills

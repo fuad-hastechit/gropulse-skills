@@ -17,7 +17,7 @@ Adds a "Book a Free Growth Strategy Call" feature to a Gropulse embedded Shopify
 1. **Installs** `@gropulse/booking-widget` from npm
 2. **Exposes** shop context fields in the root app loader (`bookingApiUrl`, `ownerName`, `email`, `plan`, `installedSince`, `timezone`)
 3. **Creates** a dedicated `/app/growth-call` page (Polaris Web Components, inline `BookingWidget`)
-4. **Adds** a fixed floating CTA button in the app shell that hides on the growth-call page itself
+4. **Adds** a fixed floating CTA button in the app shell that hides on the growth-call page and plan page (if it exists)
 
 The widget talks to `https://booking.gropulse.com` — a deployed AI chat + Cal.com booking API. No backend work is needed in the app.
 
@@ -31,7 +31,7 @@ There are **two separate buttons** with the same label but completely different 
 
 - **Location:** Fixed position, bottom-left corner of every app page (`position: "fixed", bottom: "24px", left: "24px"`)
 - **Defined in:** `app/routes/app.tsx` inside `AppShell`, after `<Outlet />`
-- **Visible on:** Every page **except** `/app/growth-call` (hidden via `isGrowthCallPage` check)
+- **Visible on:** Every page **except** `/app/growth-call` and `/app/plan` (hidden via `isHidden` check)
 - **Action:** Navigates to `/app/growth-call` via `useNavigate` from `react-router` — `onClick={() => navigate("/app/growth-call")}`. NOT `<Link>`.
 - **Renders as:** Raw HTML `<button>` with inline styles. Not `<Link>`, not `<s-button>` — Polaris Web Components don't render reliably in fixed-position overlays inside the Shopify Admin iframe
 - **Layout:** `display: "flex"`, `alignItems: "center"`, `gap: "10px"` (icon left, text right)
@@ -173,11 +173,11 @@ Expected: no new TypeScript errors.
 
 ## Step 3 — Add floating CTA button to app shell
 
-This is **Button 1** — the navigation button visible on every page except `/app/growth-call`.
+This is **Button 1** — the navigation button visible on every page except `/app/growth-call` and `/app/plan` (if that route exists).
 
 In `app/routes/app.tsx`, update the `AppShell` component to:
 1. Import `useLocation` and `useNavigate` from `react-router`
-2. Hide the button when already on the growth-call page
+2. Hide the button on growth-call and plan pages
 3. Render a fixed-position custom button that navigates to `/app/growth-call`
 
 **Import line change:**
@@ -190,12 +190,12 @@ In `app/routes/app.tsx`, update the `AppShell` component to:
 ```tsx
 const navigate = useNavigate();
 const location = useLocation();
-const isGrowthCallPage = location.pathname === "/app/growth-call";
+const isHidden = location.pathname === "/app/growth-call" || location.pathname === "/app/plan";
 ```
 
 **Inside the JSX, after `<Outlet />` and before closing `</AppProvider>`:**
 ```tsx
-{!isGrowthCallPage && (
+{!isHidden && (
   <div style={{ position: "fixed", bottom: "24px", left: "24px", zIndex: 9998 }}>
     <button
       onClick={() => navigate("/app/growth-call")}
@@ -242,7 +242,7 @@ const isGrowthCallPage = location.pathname === "/app/growth-call";
 **Design decisions:**
 - Raw `<button>` + `useNavigate` for programmatic navigation. Not `<Link>`, not `<s-button>` — Polaris Web Components don't render reliably in fixed-position overlays inside the Shopify Admin iframe.
 - `zIndex: 9998` keeps it below Shopify Admin modals (z-index 9999+).
-- Hidden on `/app/growth-call` to avoid visual redundancy with Button 2.
+- Hidden on `/app/growth-call` (redundant with Button 2) and `/app/plan` (if that route exists — contextually irrelevant there).
 - **Do NOT add `/app/growth-call` to `<s-app-nav>`** — hidden page, access only via this floating button.
 
 **Verify:**
@@ -454,7 +454,7 @@ When adding this to a new app:
 | Widget chat shows error | `apiBaseUrl` wrong or API down | Check `https://booking.gropulse.com/health`; verify `BOOKING_API_URL` env var |
 | No slots in chat | Cal.com calendar full or timezone mismatch | Check Cal.com admin; verify `timezone` is valid IANA string |
 | TypeScript error on `data.bookingApiUrl` | Loader field not added | Re-check Step 2 — all 6 fields must be in loader return |
-| Floating button (Button 1) shows on growth-call page | `pathname` check failing | Verify `location.pathname === "/app/growth-call"` — check for trailing slash |
+| Floating button (Button 1) shows on growth-call or plan page | `isHidden` check failing | Verify both `location.pathname === "/app/growth-call"` and `=== "/app/plan"` — check for trailing slash |
 | Both buttons visible on growth-call page | Same as above | Button 1 should be hidden; only Button 2 (widget) shows on that page |
 | Widget styles broken | CSS not imported | Confirm `import "@gropulse/booking-widget/styles.css"` in `app.growth-call.tsx` |
 | `useRouteLoaderData` returns `undefined` | Route ID string wrong | Must be exactly `"routes/app"` — matches `app/routes/app.tsx` |
@@ -527,7 +527,7 @@ Button 1 is in `AppShell` — add `useTranslation` and replace the hardcoded lab
  function AppShell() {
 +  const { t } = useTranslation();
    const location = useLocation();
-   const isGrowthCallPage = location.pathname === "/app/growth-call";
+   const isHidden = location.pathname === "/app/growth-call" || location.pathname === "/app/plan";
    // ...
 
 -      Book Free Strategy Call
